@@ -19,7 +19,7 @@ A lightweight UIKit & SwiftUI library to create interactive onboarding tours —
 
 ## Requirements
 
-- iOS 15.0+
+- iOS 13.0+
 - Swift 5.7+
 - Xcode 14+
 
