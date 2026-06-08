@@ -6,6 +6,7 @@
 //
 
 import Foundation
+
 public protocol ShowcaseControllerDelegate: AnyObject {
     func showcaseController(_ controller: ShowcaseController,
                             didMoveTo index: Int,
@@ -38,17 +39,24 @@ public class ShowcaseController {
     public func registerFrame(id: String, frame: CGRect) {
         frameMap[id] = frame
         if var item = registry[id] {
-            item.frame    = frame
+            item.frame   = frame
             registry[id] = item
+        }
+        // Also update the live items array so the overlay always
+        // reads the latest frame regardless of when this is called
+        if let idx = items.firstIndex(where: { $0.id == id }) {
+            items[idx].frame = frame
         }
     }
 
     public func refreshHighlight(for id: String, frame: CGRect) {
         guard let idx = items.firstIndex(where: { $0.id == id }) else { return }
         items[idx].frame = frame
-        if currentIndex == idx {
-            delegate?.showcaseController(self, didMoveTo: idx, item: items[idx])
-        }
+        frameMap[id]     = frame
+        // Only fire the delegate if this IS the current step —
+        // and guard against re-entrant calls from the delegate itself
+        guard currentIndex == idx else { return }
+        delegate?.showcaseController(self, didMoveTo: idx, item: items[idx])
     }
 
     // MARK: - Start
@@ -91,10 +99,32 @@ public class ShowcaseController {
         completion = nil
     }
 
+    // MARK: - Core: show with scroll-first, then layout-settle, then highlight
+
     private func showCurrent() {
         guard currentIndex < items.count else { return }
-        delegate?.showcaseController(self,
-                                     didMoveTo: currentIndex,
-                                     item: items[currentIndex])
+        let item = items[currentIndex]
+
+        // 1. Fire onWillShow — caller scrolls the view into position here
+        item.onWillShow?()
+
+        // 2. Wait two run-loop ticks:
+        //    tick 1 → UIKit processes the scroll + layout pass
+        //    tick 2 → LayoutObserverView.layoutSubviews fires → syncFrame()
+        //             updates items[currentIndex].frame via registerFrame
+        //    tick 3 → frame is guaranteed stable, fire the delegate
+        DispatchQueue.main.async { [weak self] in
+            DispatchQueue.main.async { [weak self] in
+                DispatchQueue.main.async { [weak self] in
+                    guard let self else { return }
+                    // Re-read the item — frame may have been updated by
+                    // LayoutObserverView.syncFrame() during the ticks above
+                    let latestItem = self.items[self.currentIndex]
+                    self.delegate?.showcaseController(self,
+                                                     didMoveTo: self.currentIndex,
+                                                     item: latestItem)
+                }
+            }
+        }
     }
 }

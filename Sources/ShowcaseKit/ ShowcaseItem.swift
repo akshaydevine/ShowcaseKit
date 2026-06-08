@@ -19,18 +19,23 @@ public struct ShowcaseItem {
     public let tooltipStyle:      ShowcaseTooltipStyle
     public let actionButtonTitle: String?
     public let onTargetTap:       (() -> Void)?
+    /// Called by ShowcaseKit just before this step is shown.
+    /// Use it to scroll the item into view. The SDK waits for the
+    /// next run-loop tick after this fires so layout can settle.
+    public let onWillShow:        (() -> Void)?
 
     public init(
         id:                String,
-        frame:             CGRect             = .zero,
+        frame:             CGRect              = .zero,
         title:             String,
         description:       String,
-        shape:             ShowcaseShape       = .rectangle(cornerRadius: 12),
-        tooltipPosition:   TooltipPosition     = .auto,
-        titleStyle:        ShowcaseTitleStyle  = .default,
+        shape:             ShowcaseShape        = .rectangle(cornerRadius: 12),
+        tooltipPosition:   TooltipPosition      = .auto,
+        titleStyle:        ShowcaseTitleStyle   = .default,
         tooltipStyle:      ShowcaseTooltipStyle = .default,
-        actionButtonTitle: String?             = nil,
-        onTargetTap:       (() -> Void)?       = nil
+        actionButtonTitle: String?              = nil,
+        onTargetTap:       (() -> Void)?        = nil,
+        onWillShow:        (() -> Void)?        = nil
     ) {
         self.id                = id
         self.frame             = frame
@@ -42,6 +47,7 @@ public struct ShowcaseItem {
         self.tooltipStyle      = tooltipStyle
         self.actionButtonTitle = actionButtonTitle
         self.onTargetTap       = onTargetTap
+        self.onWillShow        = onWillShow
     }
 }
 
