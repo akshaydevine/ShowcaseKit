@@ -69,6 +69,7 @@ public class ShowcaseOverlayView: UIView, ShowcaseControllerDelegate {
                                    didMoveTo index: Int,
                                    item: ShowcaseItem) {
         isHidden = false
+        let highlightFrame = expandedHighlightFrame(for: item)
 
         let isForward  = index >= lastIndex
         lastIndex      = index
@@ -86,9 +87,9 @@ public class ShowcaseOverlayView: UIView, ShowcaseControllerDelegate {
             self.tooltipView.transform = CGAffineTransform(translationX: slideIn, y: 0)
             self.tooltipView.alpha = 0
 
-            self.cutoutLayer.update(frame: item.frame, shape: item.shape, padding: 8)
+            self.cutoutLayer.update(highlightFrame: highlightFrame, shape: item.shape)
             self.tooltipView.configure(item: item, controller: controller)
-            self.layoutTooltip(item: item)
+            self.layoutTooltip(item: item, highlightFrame: highlightFrame)
 
             // --- Animate NEW tooltip in ---
             UIView.animate(withDuration: 0.32, delay: 0,
@@ -112,25 +113,24 @@ public class ShowcaseOverlayView: UIView, ShowcaseControllerDelegate {
 
     // MARK: - Tooltip positioning
 
-    private func layoutTooltip(item: ShowcaseItem) {
+    private func layoutTooltip(item: ShowcaseItem, highlightFrame: CGRect) {
         let screen   = UIScreen.main.bounds
         let sidePad: CGFloat = 16
         let arrowH:  CGFloat = 10
-        let cutPad:  CGFloat = 8
         let gap:     CGFloat = 6
         let tooltipW = screen.width - sidePad * 2
 
         // Give the tooltip its width so intrinsicCardHeight() can measure correctly
         tooltipView.bounds.size.width = tooltipW
 
-        let spaceAbove = item.frame.minY - cutPad - gap
-        let spaceBelow = screen.height - (item.frame.maxY + cutPad + gap)
+        let spaceAbove = highlightFrame.minY - gap
+        let spaceBelow = screen.height - (highlightFrame.maxY + gap)
         let showAbove  = spaceAbove >= spaceBelow && spaceAbove > 100
 
         // FIX: call setArrow BEFORE measuring height, so the arrow flag is correct
         // when layoutSubviews runs during intrinsicCardHeight().
         tooltipView.setArrow(showAbove: showAbove,
-                             targetMidX: item.frame.midX,
+                             targetMidX: highlightFrame.midX,
                              tooltipWidth: tooltipW)
 
         // Now measure after arrow state is set — single layout pass, correct result
@@ -138,14 +138,14 @@ public class ShowcaseOverlayView: UIView, ShowcaseControllerDelegate {
         let totalH = arrowH + cardH
 
         let midX: CGFloat = {
-            let ideal = item.frame.midX
+            let ideal = highlightFrame.midX
             let half  = tooltipW / 2
             return min(max(ideal, half + sidePad), screen.width - half - sidePad)
         }()
 
         let midY: CGFloat = showAbove
-            ? item.frame.minY - cutPad - gap - totalH / 2
-            : item.frame.maxY + cutPad + gap + totalH / 2
+            ? highlightFrame.minY - gap - totalH / 2
+            : highlightFrame.maxY + gap + totalH / 2
 
         tooltipView.bounds.size = CGSize(width: tooltipW, height: totalH)
         tooltipView.center      = CGPoint(x: midX, y: midY)
@@ -153,6 +153,16 @@ public class ShowcaseOverlayView: UIView, ShowcaseControllerDelegate {
         // Single explicit layout pass — no double-render
         tooltipView.setNeedsLayout()
         tooltipView.layoutIfNeeded()
+    }
+
+    private func expandedHighlightFrame(for item: ShowcaseItem) -> CGRect {
+        let insets = item.highlightInsets
+        return CGRect(
+            x: item.frame.minX - insets.left,
+            y: item.frame.minY - insets.top,
+            width: item.frame.width + insets.left + insets.right,
+            height: item.frame.height + insets.top + insets.bottom
+        )
     }
 
     // MARK: - Present helpers
@@ -209,21 +219,20 @@ private class CutoutLayer: CALayer {
 
     required init?(coder: NSCoder) { fatalError() }
 
-    func update(frame highlightFrame: CGRect, shape: ShowcaseShape, padding: CGFloat) {
+    func update(highlightFrame: CGRect, shape: ShowcaseShape) {
         let screenPath = UIBezierPath(rect: UIScreen.main.bounds)
-        let cutRect    = highlightFrame.insetBy(dx: -padding, dy: -padding)
 
         let cutPath: UIBezierPath
         if shape.isCircle {
-            let size = max(cutRect.width, cutRect.height)
+            let size = max(highlightFrame.width, highlightFrame.height)
             let circleRect = CGRect(
-                x: cutRect.midX - size / 2,
-                y: cutRect.midY - size / 2,
+                x: highlightFrame.midX - size / 2,
+                y: highlightFrame.midY - size / 2,
                 width: size, height: size
             )
             cutPath = UIBezierPath(ovalIn: circleRect)
         } else {
-            cutPath = UIBezierPath(roundedRect: cutRect, cornerRadius: shape.cornerRadius)
+            cutPath = UIBezierPath(roundedRect: highlightFrame, cornerRadius: shape.cornerRadius)
         }
 
         screenPath.append(cutPath)

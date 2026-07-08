@@ -11,6 +11,7 @@ import UIKit
 public struct ShowcaseItem {
     public let id:                String
     public var frame:             CGRect
+    public let highlightInsets:   UIEdgeInsets
     public let title:             String
     public let description:       String
     public let shape:             ShowcaseShape
@@ -27,6 +28,7 @@ public struct ShowcaseItem {
     public init(
         id:                String,
         frame:             CGRect              = .zero,
+        highlightInsets:   UIEdgeInsets        = UIEdgeInsets(top: 8, left: 8, bottom: 8, right: 8),
         title:             String,
         description:       String,
         shape:             ShowcaseShape        = .rectangle(cornerRadius: 12),
@@ -39,6 +41,7 @@ public struct ShowcaseItem {
     ) {
         self.id                = id
         self.frame             = frame
+        self.highlightInsets   = highlightInsets
         self.title             = title
         self.description       = description
         self.shape             = shape
