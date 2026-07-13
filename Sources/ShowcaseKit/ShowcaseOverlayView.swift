@@ -118,10 +118,17 @@ public class ShowcaseOverlayView: UIView, ShowcaseControllerDelegate {
         let sidePad: CGFloat = 16
         let arrowH:  CGFloat = 10
         let gap:     CGFloat = 6
-        let tooltipW = screen.width - sidePad * 2
+        let availableWidth = screen.width - sidePad * 2
+        let cardWidth: CGFloat
+
+        if UIDevice.current.userInterfaceIdiom == .pad {
+            cardWidth = min(480, availableWidth)
+        } else {
+            cardWidth = availableWidth
+        }
 
         // Give the tooltip its width so intrinsicCardHeight() can measure correctly
-        tooltipView.bounds.size.width = tooltipW
+        tooltipView.bounds.size.width = cardWidth
 
         let spaceAbove = highlightFrame.minY - gap
         let spaceBelow = screen.height - (highlightFrame.maxY + gap)
@@ -131,7 +138,7 @@ public class ShowcaseOverlayView: UIView, ShowcaseControllerDelegate {
         // when layoutSubviews runs during intrinsicCardHeight().
         tooltipView.setArrow(showAbove: showAbove,
                              targetMidX: highlightFrame.midX,
-                             tooltipWidth: tooltipW)
+                             tooltipWidth: cardWidth)
 
         // Now measure after arrow state is set — single layout pass, correct result
         let cardH  = tooltipView.intrinsicCardHeight()
@@ -139,7 +146,7 @@ public class ShowcaseOverlayView: UIView, ShowcaseControllerDelegate {
 
         let midX: CGFloat = {
             let ideal = highlightFrame.midX
-            let half  = tooltipW / 2
+            let half  = cardWidth / 2
             return min(max(ideal, half + sidePad), screen.width - half - sidePad)
         }()
 
@@ -147,7 +154,7 @@ public class ShowcaseOverlayView: UIView, ShowcaseControllerDelegate {
             ? highlightFrame.minY - gap - totalH / 2
             : highlightFrame.maxY + gap + totalH / 2
 
-        tooltipView.bounds.size = CGSize(width: tooltipW, height: totalH)
+        tooltipView.bounds.size = CGSize(width: cardWidth, height: totalH)
         tooltipView.center      = CGPoint(x: midX, y: midY)
 
         // Single explicit layout pass — no double-render
