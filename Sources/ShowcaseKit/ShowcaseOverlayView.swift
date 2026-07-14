@@ -370,6 +370,13 @@ private class TooltipCardView: UIView {
     func configure(item: ShowcaseItem, controller: ShowcaseController) {
         self.controller = controller
         let tooltipStyle = item.tooltipStyle
+        let primaryTextColor = controller.isLast
+            ? (tooltipStyle.doneButtonTextColor ?? tooltipStyle.buttonTextColor)
+            : (tooltipStyle.nextButtonTextColor ?? tooltipStyle.buttonTextColor)
+        let backTextColor = tooltipStyle.backButtonTextColor
+            ?? UIColor.white.withAlphaComponent(0.75)
+        let skipTextColor = tooltipStyle.skipButtonTextColor
+            ?? UIColor.white.withAlphaComponent(0.5)
 
         cardView.backgroundColor    = tooltipStyle.backgroundColor
         cardView.layer.cornerRadius = tooltipStyle.cornerRadius
@@ -383,28 +390,23 @@ private class TooltipCardView: UIView {
 
         // Reset every reusable button before applying this step's overrides.
         nextButton.titleLabel?.font = UIFont.systemFont(ofSize: 13, weight: .semibold)
-        nextButton.setTitleColor(tooltipStyle.buttonTextColor, for: .normal)
+        nextButton.setTitleColor(primaryTextColor, for: .normal)
+        nextButton.tintColor = primaryTextColor
         backButton.titleLabel?.font = UIFont.systemFont(ofSize: 13, weight: .medium)
-        backButton.setTitleColor(UIColor.white.withAlphaComponent(0.75), for: .normal)
+        backButton.setTitleColor(backTextColor, for: .normal)
+        backButton.tintColor = backTextColor
         skipButton.titleLabel?.font = UIFont.systemFont(ofSize: 13)
-        skipButton.setTitleColor(UIColor.white.withAlphaComponent(0.5), for: .normal)
+        skipButton.setTitleColor(skipTextColor, for: .normal)
+        skipButton.tintColor = skipTextColor
         applyImage(nil, to: nextButton, placement: .trailing)
         applyImage(nil, to: backButton, placement: .leading)
 
         if controller.isLast {
             nextButton.titleLabel?.font = tooltipStyle.doneButtonFont
                 ?? UIFont.systemFont(ofSize: 13, weight: .semibold)
-            nextButton.setTitleColor(
-                tooltipStyle.doneButtonTextColor ?? tooltipStyle.buttonTextColor,
-                for: .normal
-            )
         } else {
             nextButton.titleLabel?.font = tooltipStyle.nextButtonFont
                 ?? UIFont.systemFont(ofSize: 13, weight: .semibold)
-            nextButton.setTitleColor(
-                tooltipStyle.nextButtonTextColor ?? tooltipStyle.buttonTextColor,
-                for: .normal
-            )
             applyImage(
                 tooltipStyle.nextButtonImage,
                 to: nextButton,
@@ -414,10 +416,6 @@ private class TooltipCardView: UIView {
 
         backButton.titleLabel?.font = tooltipStyle.backButtonFont
             ?? UIFont.systemFont(ofSize: 13, weight: .medium)
-        backButton.setTitleColor(
-            tooltipStyle.backButtonTextColor ?? UIColor.white.withAlphaComponent(0.75),
-            for: .normal
-        )
         applyImage(
             tooltipStyle.backButtonImage,
             to: backButton,
@@ -426,10 +424,6 @@ private class TooltipCardView: UIView {
 
         skipButton.titleLabel?.font = tooltipStyle.skipButtonFont
             ?? UIFont.systemFont(ofSize: 13)
-        skipButton.setTitleColor(
-            tooltipStyle.skipButtonTextColor ?? UIColor.white.withAlphaComponent(0.5),
-            for: .normal
-        )
 
         // Step dots
         dotsStack.arrangedSubviews.forEach { $0.removeFromSuperview() }
