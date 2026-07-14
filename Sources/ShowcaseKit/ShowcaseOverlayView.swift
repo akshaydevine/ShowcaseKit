@@ -338,7 +338,7 @@ private class TooltipCardView: UIView {
     }
 
     private func styleBackButton() {
-        backButton.setTitle("← Back", for: .normal)
+        backButton.setTitle("Back", for: .normal)
         backButton.titleLabel?.font   = UIFont.systemFont(ofSize: 13, weight: .medium)
         backButton.setTitleColor(UIColor.white.withAlphaComponent(0.75), for: .normal)
         backButton.backgroundColor    = UIColor.white.withAlphaComponent(0.12)
