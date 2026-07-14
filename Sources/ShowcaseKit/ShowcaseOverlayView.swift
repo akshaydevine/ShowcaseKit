@@ -386,6 +386,10 @@ private class TooltipCardView: UIView {
         descLabel.font              = tooltipStyle.descriptionFont
         descLabel.textColor         = tooltipStyle.descriptionColor
         descLabel.text              = item.description
+        counterLabel.font           = tooltipStyle.counterLabelFont
+            ?? UIFont.preferredFont(forTextStyle: .caption2)
+        counterLabel.textColor      = tooltipStyle.counterLabelTextColor
+            ?? UIColor.white.withAlphaComponent(0.45)
         nextButton.backgroundColor  = tooltipStyle.buttonColor
 
         // Reset every reusable button before applying this step's overrides.

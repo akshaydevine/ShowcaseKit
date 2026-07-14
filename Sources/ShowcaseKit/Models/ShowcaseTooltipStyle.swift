@@ -32,6 +32,8 @@ public struct ShowcaseTooltipStyle {
     public var backButtonImage: UIImage?
     public var nextButtonImagePlacement: ShowcaseButtonImagePlacement
     public var backButtonImagePlacement: ShowcaseButtonImagePlacement
+    public var counterLabelFont: UIFont?
+    public var counterLabelTextColor: UIColor?
 
     public init(
         backgroundColor:  UIColor   = UIColor(red: 0.13, green: 0.13, blue: 0.18, alpha: 1),
@@ -52,7 +54,9 @@ public struct ShowcaseTooltipStyle {
         nextButtonImage: UIImage? = nil,
         backButtonImage: UIImage? = nil,
         nextButtonImagePlacement: ShowcaseButtonImagePlacement = .trailing,
-        backButtonImagePlacement: ShowcaseButtonImagePlacement = .leading
+        backButtonImagePlacement: ShowcaseButtonImagePlacement = .leading,
+        counterLabelFont: UIFont? = nil,
+        counterLabelTextColor: UIColor? = nil
     ) {
         self.backgroundColor  = backgroundColor
         self.cornerRadius     = cornerRadius
@@ -73,6 +77,8 @@ public struct ShowcaseTooltipStyle {
         self.backButtonImage = backButtonImage
         self.nextButtonImagePlacement = nextButtonImagePlacement
         self.backButtonImagePlacement = backButtonImagePlacement
+        self.counterLabelFont = counterLabelFont
+        self.counterLabelTextColor = counterLabelTextColor
     }
 
     public static let `default` = ShowcaseTooltipStyle()
