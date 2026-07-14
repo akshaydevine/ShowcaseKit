@@ -7,6 +7,11 @@
 import Foundation
 import UIKit
 
+public enum ShowcaseButtonImagePlacement {
+    case leading
+    case trailing
+}
+
 public struct ShowcaseTooltipStyle {
     public let backgroundColor:  UIColor
     public let cornerRadius:     CGFloat
@@ -15,6 +20,18 @@ public struct ShowcaseTooltipStyle {
     public let descriptionColor: UIColor
     public let buttonColor:      UIColor
     public let buttonTextColor:  UIColor
+    public var nextButtonFont:   UIFont?
+    public var doneButtonFont:   UIFont?
+    public var backButtonFont:   UIFont?
+    public var skipButtonFont:   UIFont?
+    public var nextButtonTextColor: UIColor?
+    public var doneButtonTextColor: UIColor?
+    public var backButtonTextColor: UIColor?
+    public var skipButtonTextColor: UIColor?
+    public var nextButtonImage: UIImage?
+    public var backButtonImage: UIImage?
+    public var nextButtonImagePlacement: ShowcaseButtonImagePlacement
+    public var backButtonImagePlacement: ShowcaseButtonImagePlacement
 
     public init(
         backgroundColor:  UIColor   = UIColor(red: 0.13, green: 0.13, blue: 0.18, alpha: 1),
@@ -23,7 +40,19 @@ public struct ShowcaseTooltipStyle {
         descriptionFont:  UIFont    = UIFont.preferredFont(forTextStyle: .subheadline),
         descriptionColor: UIColor   = UIColor.white.withAlphaComponent(0.8),
         buttonColor:      UIColor   = .systemIndigo,
-        buttonTextColor:  UIColor   = .white
+        buttonTextColor:  UIColor   = .white,
+        nextButtonFont: UIFont? = nil,
+        doneButtonFont: UIFont? = nil,
+        backButtonFont: UIFont? = nil,
+        skipButtonFont: UIFont? = nil,
+        nextButtonTextColor: UIColor? = nil,
+        doneButtonTextColor: UIColor? = nil,
+        backButtonTextColor: UIColor? = nil,
+        skipButtonTextColor: UIColor? = nil,
+        nextButtonImage: UIImage? = nil,
+        backButtonImage: UIImage? = nil,
+        nextButtonImagePlacement: ShowcaseButtonImagePlacement = .trailing,
+        backButtonImagePlacement: ShowcaseButtonImagePlacement = .leading
     ) {
         self.backgroundColor  = backgroundColor
         self.cornerRadius     = cornerRadius
@@ -32,6 +61,18 @@ public struct ShowcaseTooltipStyle {
         self.descriptionColor = descriptionColor
         self.buttonColor      = buttonColor
         self.buttonTextColor  = buttonTextColor
+        self.nextButtonFont   = nextButtonFont
+        self.doneButtonFont   = doneButtonFont
+        self.backButtonFont   = backButtonFont
+        self.skipButtonFont   = skipButtonFont
+        self.nextButtonTextColor = nextButtonTextColor
+        self.doneButtonTextColor = doneButtonTextColor
+        self.backButtonTextColor = backButtonTextColor
+        self.skipButtonTextColor = skipButtonTextColor
+        self.nextButtonImage = nextButtonImage
+        self.backButtonImage = backButtonImage
+        self.nextButtonImagePlacement = nextButtonImagePlacement
+        self.backButtonImagePlacement = backButtonImagePlacement
     }
 
     public static let `default` = ShowcaseTooltipStyle()

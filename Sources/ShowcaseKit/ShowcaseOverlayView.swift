@@ -369,17 +369,67 @@ private class TooltipCardView: UIView {
 
     func configure(item: ShowcaseItem, controller: ShowcaseController) {
         self.controller = controller
+        let tooltipStyle = item.tooltipStyle
 
-        cardView.backgroundColor    = item.tooltipStyle.backgroundColor
-        cardView.layer.cornerRadius = item.tooltipStyle.cornerRadius
+        cardView.backgroundColor    = tooltipStyle.backgroundColor
+        cardView.layer.cornerRadius = tooltipStyle.cornerRadius
         titleLabel.font             = item.titleStyle.font
         titleLabel.textColor        = item.titleStyle.color
         titleLabel.text             = item.title
-        descLabel.font              = item.tooltipStyle.descriptionFont
-        descLabel.textColor         = item.tooltipStyle.descriptionColor
+        descLabel.font              = tooltipStyle.descriptionFont
+        descLabel.textColor         = tooltipStyle.descriptionColor
         descLabel.text              = item.description
-        nextButton.backgroundColor  = item.tooltipStyle.buttonColor
-        nextButton.setTitleColor(item.tooltipStyle.buttonTextColor, for: .normal)
+        nextButton.backgroundColor  = tooltipStyle.buttonColor
+
+        // Reset every reusable button before applying this step's overrides.
+        nextButton.titleLabel?.font = UIFont.systemFont(ofSize: 13, weight: .semibold)
+        nextButton.setTitleColor(tooltipStyle.buttonTextColor, for: .normal)
+        backButton.titleLabel?.font = UIFont.systemFont(ofSize: 13, weight: .medium)
+        backButton.setTitleColor(UIColor.white.withAlphaComponent(0.75), for: .normal)
+        skipButton.titleLabel?.font = UIFont.systemFont(ofSize: 13)
+        skipButton.setTitleColor(UIColor.white.withAlphaComponent(0.5), for: .normal)
+        applyImage(nil, to: nextButton, placement: .trailing)
+        applyImage(nil, to: backButton, placement: .leading)
+
+        if controller.isLast {
+            nextButton.titleLabel?.font = tooltipStyle.doneButtonFont
+                ?? UIFont.systemFont(ofSize: 13, weight: .semibold)
+            nextButton.setTitleColor(
+                tooltipStyle.doneButtonTextColor ?? tooltipStyle.buttonTextColor,
+                for: .normal
+            )
+        } else {
+            nextButton.titleLabel?.font = tooltipStyle.nextButtonFont
+                ?? UIFont.systemFont(ofSize: 13, weight: .semibold)
+            nextButton.setTitleColor(
+                tooltipStyle.nextButtonTextColor ?? tooltipStyle.buttonTextColor,
+                for: .normal
+            )
+            applyImage(
+                tooltipStyle.nextButtonImage,
+                to: nextButton,
+                placement: tooltipStyle.nextButtonImagePlacement
+            )
+        }
+
+        backButton.titleLabel?.font = tooltipStyle.backButtonFont
+            ?? UIFont.systemFont(ofSize: 13, weight: .medium)
+        backButton.setTitleColor(
+            tooltipStyle.backButtonTextColor ?? UIColor.white.withAlphaComponent(0.75),
+            for: .normal
+        )
+        applyImage(
+            tooltipStyle.backButtonImage,
+            to: backButton,
+            placement: tooltipStyle.backButtonImagePlacement
+        )
+
+        skipButton.titleLabel?.font = tooltipStyle.skipButtonFont
+            ?? UIFont.systemFont(ofSize: 13)
+        skipButton.setTitleColor(
+            tooltipStyle.skipButtonTextColor ?? UIColor.white.withAlphaComponent(0.5),
+            for: .normal
+        )
 
         // Step dots
         dotsStack.arrangedSubviews.forEach { $0.removeFromSuperview() }
@@ -388,7 +438,7 @@ private class TooltipCardView: UIView {
             dot.layer.cornerRadius = 3
             let isActive = i == controller.currentIndex
             dot.backgroundColor = isActive
-                ? item.tooltipStyle.buttonColor
+                ? tooltipStyle.buttonColor
                 : UIColor.white.withAlphaComponent(0.25)
             let w: CGFloat = isActive ? 18 : 6
             dot.widthAnchor.constraint(equalToConstant: w).isActive  = true
@@ -406,6 +456,26 @@ private class TooltipCardView: UIView {
 
         // FIX: No setNeedsLayout() / layoutIfNeeded() here.
         // The caller (ShowcaseOverlayView.layoutTooltip) owns the layout cycle.
+    }
+
+    private func applyImage(
+        _ image: UIImage?,
+        to button: UIButton,
+        placement: ShowcaseButtonImagePlacement
+    ) {
+        button.setImage(image, for: .normal)
+
+        guard image != nil else {
+            button.semanticContentAttribute = .unspecified
+            return
+        }
+
+        switch placement {
+        case .leading:
+            button.semanticContentAttribute = .forceLeftToRight
+        case .trailing:
+            button.semanticContentAttribute = .forceRightToLeft
+        }
     }
 
     // MARK: - Arrow positioning
