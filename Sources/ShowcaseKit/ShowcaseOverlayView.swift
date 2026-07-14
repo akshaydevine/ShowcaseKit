@@ -450,8 +450,8 @@ private class TooltipCardView: UIView {
         backButton.isHidden = controller.isFirst
 
         let nextTitle = controller.isLast
-            ? (item.actionButtonTitle ?? "Done ✓")
-            : (item.actionButtonTitle ?? "Next →")
+            ? (item.actionButtonTitle ?? "Done")
+            : (item.actionButtonTitle ?? "Next")
         nextButton.setTitle(nextTitle, for: .normal)
 
         // FIX: No setNeedsLayout() / layoutIfNeeded() here.
