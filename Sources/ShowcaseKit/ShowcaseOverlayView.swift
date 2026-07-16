@@ -69,6 +69,7 @@ public class ShowcaseOverlayView: UIView, ShowcaseControllerDelegate {
                                    didMoveTo index: Int,
                                    item: ShowcaseItem) {
         isHidden = false
+        let highlightFrame = expandedHighlightFrame(for: item)
 
         let isForward  = index >= lastIndex
         lastIndex      = index
@@ -86,9 +87,9 @@ public class ShowcaseOverlayView: UIView, ShowcaseControllerDelegate {
             self.tooltipView.transform = CGAffineTransform(translationX: slideIn, y: 0)
             self.tooltipView.alpha = 0
 
-            self.cutoutLayer.update(frame: item.frame, shape: item.shape, padding: 8)
+            self.cutoutLayer.update(highlightFrame: highlightFrame, shape: item.shape)
             self.tooltipView.configure(item: item, controller: controller)
-            self.layoutTooltip(item: item)
+            self.layoutTooltip(item: item, highlightFrame: highlightFrame)
 
             // --- Animate NEW tooltip in ---
             UIView.animate(withDuration: 0.32, delay: 0,
@@ -112,47 +113,63 @@ public class ShowcaseOverlayView: UIView, ShowcaseControllerDelegate {
 
     // MARK: - Tooltip positioning
 
-    private func layoutTooltip(item: ShowcaseItem) {
+    private func layoutTooltip(item: ShowcaseItem, highlightFrame: CGRect) {
         let screen   = UIScreen.main.bounds
         let sidePad: CGFloat = 16
         let arrowH:  CGFloat = 10
-        let cutPad:  CGFloat = 8
         let gap:     CGFloat = 6
-        let tooltipW = screen.width - sidePad * 2
+        let availableWidth = screen.width - sidePad * 2
+        let cardWidth: CGFloat
+
+        if UIDevice.current.userInterfaceIdiom == .pad {
+            cardWidth = min(480, availableWidth)
+        } else {
+            cardWidth = availableWidth
+        }
 
         // Give the tooltip its width so intrinsicCardHeight() can measure correctly
-        tooltipView.bounds.size.width = tooltipW
+        tooltipView.bounds.size.width = cardWidth
 
-        let spaceAbove = item.frame.minY - cutPad - gap
-        let spaceBelow = screen.height - (item.frame.maxY + cutPad + gap)
+        let spaceAbove = highlightFrame.minY - gap
+        let spaceBelow = screen.height - (highlightFrame.maxY + gap)
         let showAbove  = spaceAbove >= spaceBelow && spaceAbove > 100
 
         // FIX: call setArrow BEFORE measuring height, so the arrow flag is correct
         // when layoutSubviews runs during intrinsicCardHeight().
         tooltipView.setArrow(showAbove: showAbove,
-                             targetMidX: item.frame.midX,
-                             tooltipWidth: tooltipW)
+                             targetMidX: highlightFrame.midX,
+                             tooltipWidth: cardWidth)
 
         // Now measure after arrow state is set — single layout pass, correct result
         let cardH  = tooltipView.intrinsicCardHeight()
         let totalH = arrowH + cardH
 
         let midX: CGFloat = {
-            let ideal = item.frame.midX
-            let half  = tooltipW / 2
+            let ideal = highlightFrame.midX
+            let half  = cardWidth / 2
             return min(max(ideal, half + sidePad), screen.width - half - sidePad)
         }()
 
         let midY: CGFloat = showAbove
-            ? item.frame.minY - cutPad - gap - totalH / 2
-            : item.frame.maxY + cutPad + gap + totalH / 2
+            ? highlightFrame.minY - gap - totalH / 2
+            : highlightFrame.maxY + gap + totalH / 2
 
-        tooltipView.bounds.size = CGSize(width: tooltipW, height: totalH)
+        tooltipView.bounds.size = CGSize(width: cardWidth, height: totalH)
         tooltipView.center      = CGPoint(x: midX, y: midY)
 
         // Single explicit layout pass — no double-render
         tooltipView.setNeedsLayout()
         tooltipView.layoutIfNeeded()
+    }
+
+    private func expandedHighlightFrame(for item: ShowcaseItem) -> CGRect {
+        let insets = item.highlightInsets
+        return CGRect(
+            x: item.frame.minX - insets.left,
+            y: item.frame.minY - insets.top,
+            width: item.frame.width + insets.left + insets.right,
+            height: item.frame.height + insets.top + insets.bottom
+        )
     }
 
     // MARK: - Present helpers
@@ -209,21 +226,20 @@ private class CutoutLayer: CALayer {
 
     required init?(coder: NSCoder) { fatalError() }
 
-    func update(frame highlightFrame: CGRect, shape: ShowcaseShape, padding: CGFloat) {
+    func update(highlightFrame: CGRect, shape: ShowcaseShape) {
         let screenPath = UIBezierPath(rect: UIScreen.main.bounds)
-        let cutRect    = highlightFrame.insetBy(dx: -padding, dy: -padding)
 
         let cutPath: UIBezierPath
         if shape.isCircle {
-            let size = max(cutRect.width, cutRect.height)
+            let size = max(highlightFrame.width, highlightFrame.height)
             let circleRect = CGRect(
-                x: cutRect.midX - size / 2,
-                y: cutRect.midY - size / 2,
+                x: highlightFrame.midX - size / 2,
+                y: highlightFrame.midY - size / 2,
                 width: size, height: size
             )
             cutPath = UIBezierPath(ovalIn: circleRect)
         } else {
-            cutPath = UIBezierPath(roundedRect: cutRect, cornerRadius: shape.cornerRadius)
+            cutPath = UIBezierPath(roundedRect: highlightFrame, cornerRadius: shape.cornerRadius)
         }
 
         screenPath.append(cutPath)
@@ -322,7 +338,7 @@ private class TooltipCardView: UIView {
     }
 
     private func styleBackButton() {
-        backButton.setTitle("← Back", for: .normal)
+        backButton.setTitle("Back", for: .normal)
         backButton.titleLabel?.font   = UIFont.systemFont(ofSize: 13, weight: .medium)
         backButton.setTitleColor(UIColor.white.withAlphaComponent(0.75), for: .normal)
         backButton.backgroundColor    = UIColor.white.withAlphaComponent(0.12)
@@ -353,17 +369,65 @@ private class TooltipCardView: UIView {
 
     func configure(item: ShowcaseItem, controller: ShowcaseController) {
         self.controller = controller
+        let tooltipStyle = item.tooltipStyle
+        let primaryTextColor = controller.isLast
+            ? (tooltipStyle.doneButtonTextColor ?? tooltipStyle.buttonTextColor)
+            : (tooltipStyle.nextButtonTextColor ?? tooltipStyle.buttonTextColor)
+        let backTextColor = tooltipStyle.backButtonTextColor
+            ?? UIColor.white.withAlphaComponent(0.75)
+        let skipTextColor = tooltipStyle.skipButtonTextColor
+            ?? UIColor.white.withAlphaComponent(0.5)
 
-        cardView.backgroundColor    = item.tooltipStyle.backgroundColor
-        cardView.layer.cornerRadius = item.tooltipStyle.cornerRadius
+        cardView.backgroundColor    = tooltipStyle.backgroundColor
+        cardView.layer.cornerRadius = tooltipStyle.cornerRadius
         titleLabel.font             = item.titleStyle.font
         titleLabel.textColor        = item.titleStyle.color
         titleLabel.text             = item.title
-        descLabel.font              = item.tooltipStyle.descriptionFont
-        descLabel.textColor         = item.tooltipStyle.descriptionColor
+        descLabel.font              = tooltipStyle.descriptionFont
+        descLabel.textColor         = tooltipStyle.descriptionColor
         descLabel.text              = item.description
-        nextButton.backgroundColor  = item.tooltipStyle.buttonColor
-        nextButton.setTitleColor(item.tooltipStyle.buttonTextColor, for: .normal)
+        counterLabel.font           = tooltipStyle.counterLabelFont
+            ?? UIFont.preferredFont(forTextStyle: .caption2)
+        counterLabel.textColor      = tooltipStyle.counterLabelTextColor
+            ?? UIColor.white.withAlphaComponent(0.45)
+        nextButton.backgroundColor  = tooltipStyle.buttonColor
+
+        // Reset every reusable button before applying this step's overrides.
+        nextButton.titleLabel?.font = UIFont.systemFont(ofSize: 13, weight: .semibold)
+        nextButton.setTitleColor(primaryTextColor, for: .normal)
+        nextButton.tintColor = primaryTextColor
+        backButton.titleLabel?.font = UIFont.systemFont(ofSize: 13, weight: .medium)
+        backButton.setTitleColor(backTextColor, for: .normal)
+        backButton.tintColor = backTextColor
+        skipButton.titleLabel?.font = UIFont.systemFont(ofSize: 13)
+        skipButton.setTitleColor(skipTextColor, for: .normal)
+        skipButton.tintColor = skipTextColor
+        applyImage(nil, to: nextButton, placement: .trailing)
+        applyImage(nil, to: backButton, placement: .leading)
+
+        if controller.isLast {
+            nextButton.titleLabel?.font = tooltipStyle.doneButtonFont
+                ?? UIFont.systemFont(ofSize: 13, weight: .semibold)
+        } else {
+            nextButton.titleLabel?.font = tooltipStyle.nextButtonFont
+                ?? UIFont.systemFont(ofSize: 13, weight: .semibold)
+            applyImage(
+                tooltipStyle.nextButtonImage,
+                to: nextButton,
+                placement: tooltipStyle.nextButtonImagePlacement
+            )
+        }
+
+        backButton.titleLabel?.font = tooltipStyle.backButtonFont
+            ?? UIFont.systemFont(ofSize: 13, weight: .medium)
+        applyImage(
+            tooltipStyle.backButtonImage,
+            to: backButton,
+            placement: tooltipStyle.backButtonImagePlacement
+        )
+
+        skipButton.titleLabel?.font = tooltipStyle.skipButtonFont
+            ?? UIFont.systemFont(ofSize: 13)
 
         // Step dots
         dotsStack.arrangedSubviews.forEach { $0.removeFromSuperview() }
@@ -372,7 +436,7 @@ private class TooltipCardView: UIView {
             dot.layer.cornerRadius = 3
             let isActive = i == controller.currentIndex
             dot.backgroundColor = isActive
-                ? item.tooltipStyle.buttonColor
+                ? tooltipStyle.buttonColor
                 : UIColor.white.withAlphaComponent(0.25)
             let w: CGFloat = isActive ? 18 : 6
             dot.widthAnchor.constraint(equalToConstant: w).isActive  = true
@@ -384,12 +448,32 @@ private class TooltipCardView: UIView {
         backButton.isHidden = controller.isFirst
 
         let nextTitle = controller.isLast
-            ? (item.actionButtonTitle ?? "Done ✓")
-            : (item.actionButtonTitle ?? "Next →")
+            ? (item.actionButtonTitle ?? "Done")
+            : (item.actionButtonTitle ?? "Next")
         nextButton.setTitle(nextTitle, for: .normal)
 
         // FIX: No setNeedsLayout() / layoutIfNeeded() here.
         // The caller (ShowcaseOverlayView.layoutTooltip) owns the layout cycle.
+    }
+
+    private func applyImage(
+        _ image: UIImage?,
+        to button: UIButton,
+        placement: ShowcaseButtonImagePlacement
+    ) {
+        button.setImage(image, for: .normal)
+
+        guard image != nil else {
+            button.semanticContentAttribute = .unspecified
+            return
+        }
+
+        switch placement {
+        case .leading:
+            button.semanticContentAttribute = .forceLeftToRight
+        case .trailing:
+            button.semanticContentAttribute = .forceRightToLeft
+        }
     }
 
     // MARK: - Arrow positioning

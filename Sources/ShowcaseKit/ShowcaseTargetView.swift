@@ -52,6 +52,7 @@ public extension UIView {
         id:                String,
         title:             String,
         description:       String,
+        highlightInsets:   UIEdgeInsets        = UIEdgeInsets(top: 8, left: 8, bottom: 8, right: 8),
         shape:             ShowcaseShape        = .rectangle(cornerRadius: 12),
         tooltipPosition:   TooltipPosition      = .auto,
         titleStyle:        ShowcaseTitleStyle   = .default,
@@ -64,6 +65,7 @@ public extension UIView {
         let item = ShowcaseItem(
             id:                id,
             frame:             .zero,
+            highlightInsets:   highlightInsets,
             title:             title,
             description:       description,
             shape:             shape,
